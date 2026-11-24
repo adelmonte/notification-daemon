@@ -53,8 +53,15 @@ center-radius = 24
 # card-bg = ["#3b4252f2", "#2e3440f2"]
 # accent = "#88c0d0"
 
+[sound]
+# file = "~/sounds/ping.oga"   # played for each notification; no sound when unset
+# device = "my-sink"           # PulseAudio/PipeWire sink, default sink when unset
+cooldown = 1                   # seconds; sounds closer together are skipped
+# Silent for muted/ignored notifications and during DND (critical ones follow dnd-allows-critical)
+
 # Rules: regexes on app-name, summary, body, category, desktop-entry; urgency = low|normal|critical.
 # state: normal | transient (popup only) | muted (history only) | ignored
+# sound: false to silence, or a file path to override [sound].file
 [[rule]]
 app-name = "^Screen Brightness$"
 state = "transient"

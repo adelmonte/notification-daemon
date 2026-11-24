@@ -42,6 +42,24 @@ pub fn run_hook(cmd: &str, n: &Notification, action: Option<&str>) {
     });
 }
 
+pub fn play_sound(file: &str, device: Option<&str>) {
+    let path = match file.strip_prefix("~/") {
+        Some(rest) => crate::config::home().join(rest),
+        None => file.into(),
+    };
+    let mut cmd = Command::new("paplay");
+    if let Some(d) = device {
+        cmd.arg(format!("--device={d}"));
+    }
+    cmd.arg("--property=media.role=event").arg(path).stdin(Stdio::null());
+    std::thread::spawn(move || match cmd.spawn() {
+        Ok(mut child) => {
+            let _ = child.wait();
+        }
+        Err(e) => eprintln!("notification-daemon: paplay: {e}"),
+    });
+}
+
 pub fn copy(text: String) {
     std::thread::spawn(move || {
         match Command::new("wl-copy").arg("--").arg(&text).stdin(Stdio::null()).spawn() {

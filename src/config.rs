@@ -9,6 +9,7 @@ pub struct Config {
     pub popup: Popup,
     pub center: Center,
     pub theme: Theme,
+    pub sound: Sound,
     #[serde(rename = "rule")]
     pub rules: Vec<Rule>,
 }
@@ -53,6 +54,30 @@ impl Default for General {
             blur: false,
         }
     }
+}
+
+#[derive(Deserialize)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct Sound {
+    /// Played for every notification that shows up, unless a rule says otherwise.
+    pub file: Option<String>,
+    /// PulseAudio/PipeWire sink name; the default sink when unset.
+    pub device: Option<String>,
+    /// Seconds after a sound during which further sounds are skipped.
+    pub cooldown: f32,
+}
+
+impl Default for Sound {
+    fn default() -> Self {
+        Self { file: None, device: None, cooldown: 1.0 }
+    }
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(untagged)]
+pub enum RuleSound {
+    Enabled(bool),
+    File(String),
 }
 
 #[derive(Deserialize)]
@@ -276,6 +301,7 @@ pub struct Rule {
     pub state: Option<RuleState>,
     pub timeout: Option<u32>,
     pub exec: Option<String>,
+    pub sound: Option<RuleSound>,
 }
 
 #[derive(Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
@@ -447,6 +473,7 @@ impl Default for Config {
             popup: Popup::default(),
             center: Center::default(),
             theme: Theme::default(),
+            sound: Sound::default(),
             rules: Vec::new(),
         }
     }

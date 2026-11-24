@@ -12,6 +12,7 @@ It started as a replacement for [SwayNotificationCenter](https://github.com/Erik
 - Smooth slide/fade animations, hover to pause timeouts, scrolling history
 - Rules to mute, hide, make transient or retime notifications by app, summary, body, category or urgency
 - Hooks that run a command on receive or on action
+- Notification sounds, silenced by Do Not Disturb, with per-rule overrides
 - Waybar module output compatible with `swaync-client -swb`
 - Crisp at fractional scales (`wp_fractional_scale_v1` + `wp_viewporter`)
 - Optional compositor blur behind cards (`ext-background-effect-v1`)
@@ -136,6 +137,21 @@ timeout = 2
 ```
 
 The default theme is Nord.
+
+### Sounds
+
+```toml
+[sound]
+file = "~/sounds/ping.oga"   # played for each notification; no sound when unset
+# device = "my-sink"         # sink name, default sink when unset
+cooldown = 1                 # seconds; sounds closer together than this are skipped
+
+[[rule]]
+app-name = "^Volume Control$"
+sound = false                # or a file path to use a different sound
+```
+
+Sounds play through `paplay` (with `media.role=event`). They are skipped for `muted` and `ignored` notifications and during Do Not Disturb, except critical ones when `dnd-allows-critical` is on.
 
 ### Hooks
 

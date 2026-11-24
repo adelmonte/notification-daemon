@@ -43,7 +43,7 @@ use wayland_protocols::wp::fractional_scale::v1::client::{
 };
 use wayland_protocols::wp::viewporter::client::{wp_viewport::WpViewport, wp_viewporter::WpViewporter};
 
-use crate::config::{self, Config, HAlign, KeyboardMode, LayerKind, RuleState};
+use crate::config::{self, Config, HAlign, KeyboardMode, LayerKind, RuleSound, RuleState};
 use crate::dbus::{Ctl, Dbus, Msg, Shared};
 use crate::exec;
 use crate::icons::Icons;
@@ -195,6 +195,7 @@ pub struct App {
     cfg_path: Option<PathBuf>,
     dbus: Dbus,
     timer: Option<RegistrationToken>,
+    last_sound: Option<Instant>,
 }
 
 fn dnd_file() -> PathBuf {
@@ -254,6 +255,7 @@ impl App {
             cfg_path,
             dbus,
             timer: None,
+            last_sound: None,
             qh,
             handle,
         };
@@ -583,6 +585,7 @@ impl App {
     fn notify(&mut self, n: Notification) {
         let mut state = if n.transient { RuleState::Transient } else { RuleState::Normal };
         let mut rule_timeout = None;
+        let mut sound = self.cfg.sound.file.clone();
         for rule in &self.cfg.rules {
             let m = |re: &Option<regex::Regex>, s: &str| re.as_ref().is_none_or(|r| r.is_match(s));
             if m(&rule.app_name, &n.app_name)
@@ -600,6 +603,12 @@ impl App {
                 }
                 if let Some(cmd) = &rule.exec {
                     exec::run_hook(cmd, &n, None);
+                }
+                match &rule.sound {
+                    Some(RuleSound::Enabled(false)) => sound = None,
+                    Some(RuleSound::Enabled(true)) => sound = sound.or_else(|| self.cfg.sound.file.clone()),
+                    Some(RuleSound::File(f)) => sound = Some(f.clone()),
+                    None => {}
                 }
             }
         }
@@ -626,9 +635,15 @@ impl App {
         let mut e = Entry::new(n, &self.cfg);
         e.in_center = state != RuleState::Transient;
         let critical = e.n.urgency == Urgency::Critical;
-        let wants_popup = state != RuleState::Muted
-            && !self.center_open
-            && (!self.dnd || (critical && self.cfg.general.dnd_allows_critical));
+        let dnd_allows = !self.dnd || (critical && self.cfg.general.dnd_allows_critical);
+        let wants_popup = state != RuleState::Muted && !self.center_open && dnd_allows;
+        if let Some(file) = sound.filter(|_| state != RuleState::Muted && dnd_allows) {
+            let cooldown = Duration::from_secs_f32(self.cfg.sound.cooldown.max(0.0));
+            if self.last_sound.is_none_or(|t| t.elapsed() >= cooldown) {
+                self.last_sound = Some(Instant::now());
+                exec::play_sound(&file, self.cfg.sound.device.as_deref());
+            }
+        }
         if wants_popup {
             let mut p = PopupState::new(duration);
             if let Some(old) = old_popup {

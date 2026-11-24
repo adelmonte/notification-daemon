@@ -1,0 +1,41 @@
+# Maintainer: adelmonte
+pkgname=notification-daemon
+pkgver=0.1.1
+pkgrel=1
+pkgdesc='Lightweight Wayland notification daemon and control center (swaync replacement)'
+arch=('x86_64')
+url='https://github.com/adelmonte/notification-daemon'
+license=('GPL-3.0-or-later')
+depends=('libxkbcommon' 'glibc' 'gcc-libs')
+optdepends=('wl-clipboard: copy 2FA codes' 'niri: focus the sender window on click')
+makedepends=('cargo')
+conflicts=('swaync')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+options=('!lto')
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo test --frozen --release
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -Dm755 target/${CARGO_BUILD_TARGET:-.}/release/notification-daemon "$pkgdir/usr/bin/notification-daemon"
+  install -Dm644 config.example.toml "$pkgdir/usr/share/doc/$pkgname/config.example.toml"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

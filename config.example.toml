@@ -1,0 +1,73 @@
+# ~/.config/notification-daemon/config.toml
+# Every key is optional; defaults match the Nord theme. Reload with: notification-daemon reload
+
+[general]
+timeout = 10            # seconds, 0 = stay until dismissed
+timeout-low = 8
+timeout-critical = 0
+respect-app-timeout = true
+transition-ms = 200
+layer = "overlay"       # overlay | top
+dnd-allows-critical = true
+max-history = 100
+focus-app-on-click = true   # focus the sender's niri window when a notification is clicked
+hide-center-on-action = true
+otp-copy-button = true
+blur = false            # ask niri to blur behind cards/panel
+# icon-theme = "Tela-nord-dark"   # default: gtk-3.0 settings.ini
+# on-receive = "some-command"     # env: NOTIFICATION_APP_NAME, _SUMMARY, _BODY, _URGENCY, ...
+# on-action = "some-command"      # also gets NOTIFICATION_ACTION
+
+[popup]
+position = "top-right"  # top-left | top-center | top-right | center-left | center | center-right | bottom-*
+width = 340
+margin = 8              # one value, [vertical, horizontal], [top, horizontal, bottom], [t, r, b, l] or { top = .., right = .. }
+gap = 8
+max-visible = 5
+summary-lines = 1
+body-lines = 3
+
+[center]
+position = "top-right"
+width = 400
+margin = 12
+height = 0              # 0 = fit content, otherwise fixed
+min-height = 0
+fill-height = false
+padding = 20
+keyboard = "on-demand"  # none | on-demand | exclusive
+close-on-focus-loss = false  # true closes when focus leaves (bad with focus-follows-mouse)
+show-title = true
+show-dnd = true
+title = "Notification Center"
+clear-all-text = "Clear All"
+dnd-text = "Do Not Disturb"
+body-lines = 5
+
+[theme]
+font = "JetBrainsMono Nerd Font"
+icon-size = 48
+card-radius = 14
+center-radius = 24
+# colors are #rrggbb or #rrggbbaa, gradients are [start, end]
+# card-bg = ["#3b4252f2", "#2e3440f2"]
+# accent = "#88c0d0"
+
+# Rules: regexes on app-name, summary, body, category, desktop-entry; urgency = low|normal|critical.
+# state: normal | transient (popup only) | muted (history only) | ignored
+[[rule]]
+app-name = "^Screen Brightness$"
+state = "transient"
+
+[[rule]]
+app-name = "^Volume Control$"
+state = "transient"
+
+[[rule]]
+app-name = "^backlight$"
+state = "muted"
+
+[[rule]]
+app-name = "^kitty$"
+summary = "Claude Code"
+state = "transient"

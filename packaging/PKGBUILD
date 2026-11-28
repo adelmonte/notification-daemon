@@ -1,6 +1,6 @@
 # Maintainer: adelmonte
 pkgname=notification-daemon
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc='Lightweight Wayland notification daemon and control center (swaync replacement)'
 arch=('x86_64')
@@ -11,7 +11,7 @@ optdepends=('libpulse: notification sounds (paplay)' 'wl-clipboard: copy 2FA cod
 makedepends=('cargo')
 conflicts=('swaync')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('45548acf94a16e7b831dcc2b81094a4f11ce51ef60bdcfa5b2255c90f86133a7')
+sha256sums=('3a30e5b5eb043cc7aa5e812e7ffb63d0ebb2b64262b3539edd97e39576c5562d')
 options=('!lto')
 
 prepare() {

@@ -62,6 +62,7 @@ cooldown = 1                   # seconds; sounds closer together are skipped
 # Rules: regexes on app-name, summary, body, category, desktop-entry; urgency = low|normal|critical.
 # state: normal | transient (popup only) | muted (history only) | ignored
 # sound: false to silence, or a file path to override [sound].file
+# skip-if-focused: true drops the popup and sound while the sender's niri window is focused
 [[rule]]
 app-name = "^Screen Brightness$"
 state = "transient"
@@ -78,3 +79,4 @@ state = "muted"
 app-name = "^kitty$"
 summary = "Claude Code"
 state = "transient"
+skip-if-focused = true      # no popup or sound while that kitty window is focused (niri)

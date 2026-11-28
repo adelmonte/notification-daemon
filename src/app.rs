@@ -586,6 +586,7 @@ impl App {
         let mut state = if n.transient { RuleState::Transient } else { RuleState::Normal };
         let mut rule_timeout = None;
         let mut sound = self.cfg.sound.file.clone();
+        let mut skip_if_focused = false;
         for rule in &self.cfg.rules {
             let m = |re: &Option<regex::Regex>, s: &str| re.as_ref().is_none_or(|r| r.is_match(s));
             if m(&rule.app_name, &n.app_name)
@@ -598,6 +599,7 @@ impl App {
                 if let Some(s) = rule.state {
                     state = s;
                 }
+                skip_if_focused |= rule.skip_if_focused;
                 if rule.timeout.is_some() {
                     rule_timeout = rule.timeout;
                 }
@@ -614,6 +616,12 @@ impl App {
         }
         if state == RuleState::Ignored {
             return;
+        }
+        if skip_if_focused && exec::sender_focused(&n) {
+            if state == RuleState::Transient {
+                return;
+            }
+            state = RuleState::Muted;
         }
         if let Some(cmd) = &self.cfg.general.on_receive {
             exec::run_hook(cmd, &n, None);

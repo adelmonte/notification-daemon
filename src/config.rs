@@ -302,6 +302,8 @@ pub struct Rule {
     pub timeout: Option<u32>,
     pub exec: Option<String>,
     pub sound: Option<RuleSound>,
+    /// Drop the popup and sound while the sender's niri window has focus.
+    pub skip_if_focused: bool,
 }
 
 #[derive(Deserialize, Clone, Copy, PartialEq, Eq, Debug)]

@@ -134,7 +134,14 @@ card-bg = ["#3b4252f2", "#2e3440f2"]   # gradient start, end
 app-name = "^Volume"
 state = "transient"      # normal | transient | muted (history only) | ignored
 timeout = 2
+
+# Terminal notifications (e.g. Claude Code via kitty): no popup or sound while that terminal is focused (niri)
+[[rule]]
+app-name = "^kitty$"
+skip-if-focused = true
 ```
+
+`skip-if-focused` asks niri for the focused window when the notification arrives. If it belongs to the sender (same pid or app id), the notification goes straight to history (or is dropped if it is `transient`). It works per window, so a terminal tab in the background of a focused window still counts as focused.
 
 The default theme is Nord.
 

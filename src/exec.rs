@@ -74,6 +74,9 @@ pub fn copy(text: String) {
 fn niri(request: &str) -> Option<serde_json::Value> {
     let path = std::env::var_os("NIRI_SOCKET")?;
     let mut s = UnixStream::connect(path).ok()?;
+    let timeout = Some(std::time::Duration::from_millis(250));
+    s.set_read_timeout(timeout).ok()?;
+    s.set_write_timeout(timeout).ok()?;
     s.write_all(request.as_bytes()).ok()?;
     s.write_all(b"\n").ok()?;
     let mut line = String::new();
@@ -81,8 +84,7 @@ fn niri(request: &str) -> Option<serde_json::Value> {
     serde_json::from_str(&line).ok()
 }
 
-/// Focuses the niri window that most likely belongs to the notification's sender.
-pub fn focus_app(n: &Notification) {
+fn sender_keys(n: &Notification) -> Vec<String> {
     let mut keys: Vec<String> = Vec::new();
     for k in [n.desktop_entry.as_deref(), Some(n.app_name.as_str())].into_iter().flatten() {
         let k = k.trim().trim_end_matches(".desktop").to_lowercase();
@@ -90,6 +92,37 @@ pub fn focus_app(n: &Notification) {
             keys.push(k);
         }
     }
+    keys
+}
+
+/// How likely a niri window is to belong to the sender: 4 same pid, 3 same app id, 2 similar app id.
+fn window_score(w: &serde_json::Value, keys: &[String], pid: Option<u32>) -> u32 {
+    let app_id = w.get("app_id").and_then(|v| v.as_str()).unwrap_or("").to_lowercase();
+    let wpid = w.get("pid").and_then(|v| v.as_u64());
+    let mut score = 0;
+    if pid.is_some() && wpid == pid.map(u64::from) {
+        score = 4;
+    }
+    for k in keys {
+        if app_id == *k || app_id.rsplit('.').next() == Some(k.as_str()) {
+            score = score.max(3);
+        } else if !app_id.is_empty() && (app_id.contains(k.as_str()) || k.contains(app_id.as_str())) {
+            score = score.max(2);
+        }
+    }
+    score
+}
+
+/// Whether niri's focused window is the notification's sender.
+pub fn sender_focused(n: &Notification) -> bool {
+    let Some(reply) = niri("\"FocusedWindow\"") else { return false };
+    let Some(w) = reply.pointer("/Ok/FocusedWindow").filter(|w| !w.is_null()) else { return false };
+    window_score(w, &sender_keys(n), n.sender_pid) >= 3
+}
+
+/// Focuses the niri window that most likely belongs to the notification's sender.
+pub fn focus_app(n: &Notification) {
+    let keys = sender_keys(n);
     let pid = n.sender_pid;
     std::thread::spawn(move || {
         let Some(reply) = niri("\"Windows\"") else { return };
@@ -97,19 +130,7 @@ pub fn focus_app(n: &Notification) {
         let mut best: Option<(u32, u64)> = None;
         for w in windows {
             let Some(id) = w.get("id").and_then(|v| v.as_u64()) else { continue };
-            let app_id = w.get("app_id").and_then(|v| v.as_str()).unwrap_or("").to_lowercase();
-            let wpid = w.get("pid").and_then(|v| v.as_u64());
-            let mut score = 0;
-            if pid.is_some() && wpid == pid.map(u64::from) {
-                score = 4;
-            }
-            for k in &keys {
-                if app_id == *k || app_id.rsplit('.').next() == Some(k.as_str()) {
-                    score = score.max(3);
-                } else if !app_id.is_empty() && (app_id.contains(k.as_str()) || k.contains(app_id.as_str())) {
-                    score = score.max(2);
-                }
-            }
+            let score = window_score(w, &keys, pid);
             if score > 0 && best.is_none_or(|(s, _)| score > s) {
                 best = Some((score, id));
             }
